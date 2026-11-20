@@ -1,12 +1,33 @@
-﻿using System;
+﻿// =============================================================================
+//  Feature     : Exception Filters (catch ... when)
+//  C# Version  : C# 6.0
+//  .NET        : .NET Framework 4.6
+//  Released    : 2015 (Visual Studio 2015)
+// -----------------------------------------------------------------------------
+//  Summary:
+//    'catch (SomeException ex) when (condition)' adds a boolean filter to a catch
+//    block. The block handles the exception only if the type matches AND the
+//    condition is true; otherwise the runtime keeps searching for another
+//    handler. Because the filter runs BEFORE the stack unwinds, a non-matching
+//    exception propagates with its original stack trace intact - unlike catching
+//    and rethrowing. This allows precise handling based on exception details.
+// =============================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace CSharp
 {
-    //.NET 4.6 / C# 6.0 (2015)
     public class ExceptionFilters
     {
+        // FILTERING ON EXCEPTION DETAILS
+        // - All three catch blocks catch the same type, HttpRequestException.
+        // - The 'when' clauses are evaluated top to bottom; the first one whose condition is
+        //   true handles the exception (timeout, then 404).
+        // - The final unfiltered catch is the fallback for any other HTTP error.
+        // - Before C# 6 you had to catch once and use if/else inside, rethrowing anything you
+        //   didn't want - which was clumsier and lost stack information.
         public void HttpRequestExample()
         {
             try
@@ -18,20 +39,21 @@ namespace CSharp
             catch (HttpRequestException ex) when (ex.Message.Contains("timeout"))
             {
                 Console.WriteLine("Request timed out - retrying...");
-                // Handle timeout specifically
             }
             catch (HttpRequestException ex) when (ex.Message.Contains("404"))
             {
                 Console.WriteLine("Resource not found");
-                // Handle 404 errors
             }
             catch (HttpRequestException ex)
             {
                 Console.WriteLine($"Other HTTP error: {ex.Message}");
-                // Handle other HTTP errors
             }
         }
 
+        // FILTERING ON EXTERNAL STATE
+        // - The filter can be ANY boolean expression, not just properties of the exception.
+        // - Here the same DivideByZeroException is handled differently depending on the time of
+        //   day; if the filter is false, the next matching catch block takes over.
         public void NumericOperationExample()
         {
             try
@@ -55,7 +77,12 @@ namespace CSharp
         private void HandleStandardError(Exception ex) => Console.WriteLine($"Standard error: {ex.Message}");
     }
 
-    //Exception filters were introduced in C# 6.0 and allow you to specify additional conditions
-    //for when a catch block should handle an exception using the when keyword.
-    //This provides more granular control over exception handling without modifying the stack trace.
+    /*
+
+    Logging trick - log every exception without actually catching it:
+        catch (Exception ex) when (Log(ex)) { }   // Log returns false -> exception keeps propagating
+
+    //1. Keep filters side-effect free (apart from logging) and make sure they can't throw.
+
+     */
 }

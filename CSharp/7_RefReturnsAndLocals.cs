@@ -1,4 +1,19 @@
-﻿using System;
+﻿// =============================================================================
+//  Feature     : ref Returns and ref Locals
+//  C# Version  : C# 7.0
+//  .NET        : .NET Framework 4.7 / .NET Core 2.0
+//  Released    : 2017 (Visual Studio 2017)
+// -----------------------------------------------------------------------------
+//  Summary:
+//    A method can return a REFERENCE to a variable (e.g. an array element or a
+//    field) instead of a copy of its value, and a 'ref' local can hold such a
+//    reference. Writing through the ref local changes the original storage
+//    directly. This avoids copying large structs and lets callers modify an
+//    element "in place" once it has been located - a building block for
+//    high-performance code such as Span<T>.
+// =============================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -13,32 +28,41 @@ namespace CSharp
             DemonstrateRefReturn();
             ModifyLargestElement();
         }
-               
 
-        // Method returning a reference to an array element
+        // REF RETURN
+        // - 'ref int' as the return type means the method returns a reference to an int variable.
+        // - 'return ref _numbers[index];' returns a reference to the array slot itself, not a copy
+        //   of its value.
+        // - You may only return references to storage that outlives the method (array elements,
+        //   fields, ref parameters) - never to a local variable.
         public static ref int GetElement(int index)
         {
             if (index < 0 || index >= _numbers.Length)
                 throw new IndexOutOfRangeException();
 
-            return ref _numbers[index]; // Return reference, not copy
+            return ref _numbers[index];
         }
 
+        // REF LOCAL
+        // - 'ref int element = ref GetElement(2);' makes 'element' an ALIAS for _numbers[2].
+        //   Both 'ref' keywords are required; without them you'd get an ordinary copy.
+        // - Assigning element = 99 writes directly into the array.
         public static void DemonstrateRefReturn()
         {
-            // Get reference to array element
             ref int element = ref GetElement(2);
 
             Console.WriteLine($"Original value: {element}"); // 3
 
-            // Modify through reference
             element = 99;
 
             Console.WriteLine($"After modification: {_numbers[2]}"); // 99
             Console.WriteLine($"Array: [{string.Join(", ", _numbers)}]"); // [1, 2, 99, 4, 5]
         }
 
-        // Ref return with conditional logic
+        // FIND-THEN-MODIFY PATTERN
+        // - The method does the search and returns a reference to the winning slot.
+        // - The caller can then update that slot in place without knowing its index -
+        //   'largest *= 2' modifies the array element itself.
         public static ref int GetLargestElement()
         {
             int maxIndex = 0;
@@ -55,17 +79,17 @@ namespace CSharp
             ref int largest = ref GetLargestElement();
             Console.WriteLine($"Largest element: {largest}");
 
-            largest *= 2; // Modify the actual array element
+            largest *= 2;
             Console.WriteLine($"After doubling: [{string.Join(", ", _numbers)}]");
         }
-
     }
 }
 
 
 /*
- // Ref returns and locals, introduced in C# 7.0, allow methods to return references to variables 
-// rather than copies of values, and enable local variables to store references. 
-//This provides significant performance benefits by avoiding unnecessary copying, 
-//especially for large value types.
+
+    //1. 'var x = GetElement(2);' (no 'ref') silently makes a COPY - changes won't reach the array.
+    //2. Later: 'ref readonly' returns (C# 7.2), ref reassignment 'r = ref other;' (C# 7.3),
+    //   and ref fields inside ref structs (C# 11).
+
  */

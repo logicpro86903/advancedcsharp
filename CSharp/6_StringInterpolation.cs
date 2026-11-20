@@ -1,28 +1,47 @@
-﻿using System;
+﻿// =============================================================================
+//  Feature     : String Interpolation ($"...")
+//  C# Version  : C# 6.0
+//  .NET        : .NET Framework 4.6
+//  Released    : 2015 (Visual Studio 2015)
+// -----------------------------------------------------------------------------
+//  Summary:
+//    Prefixing a string literal with '$' lets you embed C# expressions directly
+//    inside {braces}: $"Hello {name}". It replaces error-prone string.Format
+//    index placeholders ({0}, {1}) and '+' concatenation. Each hole supports an
+//    optional ALIGNMENT and FORMAT: {value,alignment:format}. Combine with '@'
+//    ($@"...") for verbatim, multi-line strings without escaping backslashes.
+// =============================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Schema;
 
 namespace CSharp
 {
-    //.NET 4.6 / C# 6.0 (2015)
     public class StringInterpolation
     {
         public static void Run()
         {
-            // Basic string interpolation
+            // BASIC INTERPOLATION vs THE OLD WAYS
+            // - $"... {name} ... {age} ..." evaluates each expression and inserts its ToString().
+            // - string.Format uses numbered placeholders that can get out of sync with arguments.
+            // - Concatenation with '+' is noisy and easy to get spacing wrong.
             string name = "John";
             int age = 30;
             string message = $"Hello, my name is {name} and I am {age} years old.";
             Console.WriteLine(message);
-            // Output: Hello, my name is John and I am 30 years old.
+            // Hello, my name is John and I am 30 years old.
 
-            // Without interpolation (old way)
             string oldMessage = string.Format("Hello, my name is {0} and I am {1} years old.", name, age);
             string concatMessage = "Hello, my name is " + name + " and I am " + age + " years old.";
 
 
-            //Numeric Formatting
+            // NUMERIC FORMAT STRINGS: {value:format}
+            // - F2 = fixed-point, 2 decimals    C = currency    D3 = integer padded to 3 digits
+            // - P  = percentage (x100 + %)      E2 = scientific notation, 2 decimals
+            // - Any expression can go in the hole, including arithmetic in parentheses.
+            // - '$@' combines interpolation with a verbatim (multi-line) string.
             double price = 19.95;
             decimal tax = 1.99m;
             int quantity = 3;
@@ -37,7 +56,6 @@ namespace CSharp
             ";
 
             Console.WriteLine(receipt);
-            // Output:
             // Item Price:    $19.95
             // Tax:           $1.99
             // Quantity:      003
@@ -46,7 +64,9 @@ namespace CSharp
             // Scientific:    1.23E+004
 
 
-            //DateTime Formatting
+            // DATE/TIME FORMAT STRINGS
+            // - Standard specifiers: d (short date), D (long date), t (short time), T (long time).
+            // - Custom patterns: yyyy, MM, dd, HH, mm, MMMM (month name), dddd (day name).
             DateTime currentDate = DateTime.Now;
 
             string dateFormats = $@"
@@ -63,7 +83,10 @@ namespace CSharp
 
             Console.WriteLine(dateFormats);
 
-            //Custom Number Formats
+            // MORE NUMBER FORMATS
+            // - N0 = thousands separators, no decimals   X = hexadecimal   D10 = zero-pad to 10
+            // - P1 = percentage with 1 decimal
+            // - Custom digit patterns using '#' placeholders (e.g. phone number layout).
             int number = 1234567;
             double percentage = 0.847;
 
@@ -79,7 +102,9 @@ namespace CSharp
             Console.WriteLine(customFormats);
 
 
-            //Alignment and Padding
+            // ALIGNMENT: {value,width}
+            // - Positive width right-aligns, negative width left-aligns, padding with spaces.
+            // - Perfect for printing simple text tables in the console.
             string[] names = { "Alice", "Bob", "Charlie", "Diana" };
             int[] scores = { 95, 87, 92, 88 };
 
@@ -90,8 +115,6 @@ namespace CSharp
             {
                 Console.WriteLine($"{names[i],-10} {scores[i],5}");
             }
-
-            // Output:
             // Name       Score
             // ---------------
             // Alice         95
@@ -99,7 +122,11 @@ namespace CSharp
             // Charlie       92
             // Diana         88
 
-            //Complex Object Interpolation
+            // INTERPOLATING OBJECTS AND CONDITIONAL EXPRESSIONS
+            // - Property access and format specifiers combine: {product.Price:C}.
+            // - A conditional (?:) must be wrapped in PARENTHESES, because ':' would otherwise be
+            //   read as the start of a format string.
+            // - {product} calls the object's ToString() override.
             var product = new Product
             {
                 Name = "Laptop",
@@ -121,7 +148,9 @@ namespace CSharp
             Console.WriteLine(productInfo);
 
 
-            //LINQ with String Interpolation
+            // METHOD CALLS AND LINQ INSIDE HOLES
+            // - Any expression is allowed, including method calls, lambdas and LINQ queries.
+            // - Keep holes simple for readability; complex logic is better computed beforehand.
             var numbers = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
             string summary = $@"
@@ -137,20 +166,20 @@ namespace CSharp
 
             Console.WriteLine(summary);
 
-            //Verbatim String Interpolation
+            // VERBATIM INTERPOLATED STRINGS ($@)
+            // - In a regular $"..." string a backslash must be escaped as '\\'.
+            // - In $@"..." backslashes are literal and the string may span multiple lines,
+            //   which suits file paths, connection strings and SQL text.
             string serverName = "MyServer";
             string databaseName = "ProductionDB";
             string userName = "admin";
 
-            // Regular interpolated string (escaping required)
             string connectionString1 = $"Server={serverName}\\SQLEXPRESS;Database={databaseName};User Id={userName};";
 
-            // Verbatim interpolated string (no escaping needed)
             string connectionString2 = $@"Server={serverName}\SQLEXPRESS;Database={databaseName};User Id={userName};";
 
-            // Multi-line SQL with interpolation
             string sqlQuery = $@"
-            SELECT 
+            SELECT
                 p.ProductId,
                 p.ProductName,
                 p.Price,
@@ -162,7 +191,6 @@ namespace CSharp
             ORDER BY p.Price DESC";
 
             Console.WriteLine(sqlQuery);
-                       
         }
     }
 
@@ -181,8 +209,17 @@ namespace CSharp
 
 
     /*
-     //String interpolation allows you to embed expressions directly into string literals 
-       //using the $ prefix and {} placeholders. It was introduced in C# 6.0 and provides 
-        //a more readable alternative to string.Format() and concatenation.
+
+    //1. Never build SQL from user input with interpolation - that's SQL injection.
+    //   Use parameterized queries (EF Core's FromSqlInterpolated turns holes into parameters safely).
+
+    //2. Formatting uses the CURRENT culture (decimal separator, currency symbol).
+    //   Use FormattableString.Invariant($"...") or string.Create(CultureInfo.InvariantCulture, $"...").
+
+    //3. To output a literal brace, double it: $"{{not a hole}}".
+
+    Later: C# 10 interpolated string handlers (faster, less allocation),
+           C# 11 newlines inside holes and raw interpolated strings $"""...""" (see 11_RawStringLiterals.cs).
+
      */
 }

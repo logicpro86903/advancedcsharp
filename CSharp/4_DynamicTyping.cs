@@ -1,86 +1,76 @@
-﻿using System;
+﻿// =============================================================================
+//  Feature     : Dynamic Typing (dynamic keyword)
+//  C# Version  : C# 4.0
+//  .NET        : .NET Framework 4.0
+//  Released    : 2010 (Visual Studio 2010)
+// -----------------------------------------------------------------------------
+//  Summary:
+//    A variable declared as 'dynamic' skips compile-time type checking. Member
+//    access, method calls and operators on it are resolved at RUNTIME by the
+//    Dynamic Language Runtime (DLR). This simplifies interop with dynamic
+//    languages (IronPython, JavaScript), COM automation (Office/Excel), and
+//    loosely-structured data, at the cost of IntelliSense, compile-time safety
+//    and some performance. Mistakes show up as RuntimeBinderException.
+// =============================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace CSharp
 {
-
-    //.NET FW 4 & C#4 2010
     public static class DynamicTyping
     {
+        // DYNAMIC VARIABLES
+        // - 'dyn' can hold a string, then an int, then a List<int>: its type is whatever
+        //   the current value is, decided at runtime (unlike 'var', which is fixed at compile time).
+        // - Console.WriteLine(dyn) picks the right overload at RUNTIME based on the actual type.
+        // - foreach over dyn works because, at runtime, the value is an IEnumerable.
+        // - Any member call compiles - even one that doesn't exist - and only fails when executed.
         public static void Run()
         {
-            //Dynamic typing in C# allows you to bypass compile-time type checking and defer type resolution
-            //until runtime. This is achieved using the dynamic keyword, which was introduced in C# 4.0.
-            //Interop with Dynamic Languages, COM Interop, Reflection, JSON and XML.
-        
-
             dynamic dyn = "Hello, World!";
             Console.WriteLine(dyn);
 
             dyn = 42;
             Console.WriteLine(dyn);
-         
+
             dyn = new List<int> { 1, 2, 3 };
             foreach (var item in dyn)
             {
                 Console.WriteLine(item);
             }
         }
-
     }
 }
 
 
 /*
+
   //No Compile-Time Type Checking:
   dynamic obj = "Hello";
   obj.NonExistentMethod(); // Compiles fine, but throws RuntimeBinderException at runtime
 
+  //Implicit conversion is checked at runtime too:
+  dynamic value = GetSomeValue();
+  string result = value;   // works if value is actually a string
+  int number = value;      // RuntimeBinderException if value isn't convertible to int
 
-//Type Inference from Assignment:
-dynamic value = GetSomeValue();
-string result = value; // If value is actually a string, this works
-int number = value;    // RuntimeBinderException if value isn't convertible to int
+  Common use cases:
+  //1. COM interop - Excel automation without casts:
+  dynamic excel = new Application();
+  dynamic worksheet = excel.Workbooks.Add().ActiveSheet;
+  worksheet.Cells[1, 1].Value = "Hello Excel";
 
-//Common Use Cases
+  //2. Simpler reflection:
+  dynamic instance = Activator.CreateInstance(someType);
+  var result = instance.SomeMethod("parameter");
 
-//1. Interop with Dynamic Languages:
-// Working with JavaScript objects, Python objects, etc.
-dynamic jsObject = GetJavaScriptObject();
-var name = jsObject.name;
-var result = jsObject.calculate(10, 20);
+  //3. Loosely-typed JSON (Newtonsoft):
+  dynamic json = JsonConvert.DeserializeObject(jsonString);
+  var name = json.user.name;
 
-//2. COM Interop:
-// Excel automation without complex casting
-dynamic excel = new Application();
-dynamic workbook = excel.Workbooks.Add();
-dynamic worksheet = workbook.ActiveSheet;
-worksheet.Cells[1, 1].Value = "Hello Excel";
+  Limitations: no IntelliSense, errors only at runtime, slower than static typing (the DLR
+  caches binding decisions, but there is still overhead), harder to debug.
 
-//3. Reflection Scenarios:
-// Simpler than traditional reflection
-dynamic instance = Activator.CreateInstance(someType);
-var result = instance.SomeMethod("parameter");
-
-
-//4. Working with JSON/XML:
-dynamic json = JsonConvert.DeserializeObject(jsonString);
-var name = json.user.name;
-var email = json.user.email;
-
-//Performance Considerations
-//Dynamic operations are significantly slower than static operations because:
-
-//Runtime type resolution
-//Method binding overhead
-//Caching mechanisms (though the DLR does cache binding decisions)
-
-//Limitations
-//No IntelliSense: IDEs can't provide autocomplete for dynamic variables
-//Runtime Errors: Type-related errors only surface at runtime
-//Performance: Slower than static typing
-//Debugging: More difficult to debug type-related issues
-
- 
  */
